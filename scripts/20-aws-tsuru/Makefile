@@ -17,6 +17,7 @@ config:
 
 do: config
 	tsuru install-create -c install-config.yml
+	#$(GOBIN)/tsuru install-create -c install-config.yml
 
 undo: config
 	tsuru install-remove -c install-config.yml

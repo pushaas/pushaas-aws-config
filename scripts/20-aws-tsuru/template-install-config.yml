@@ -3,7 +3,7 @@ hosts:
     size: 1
     driver:
       options:
-        amazonec2-instance-type: ["t2.medium"]
+        amazonec2-instance-type: ["t2.small"]
   apps:
     size: 1
     dedicated: true
