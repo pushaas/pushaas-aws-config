@@ -1,0 +1,20 @@
+hosts:
+  core:
+    size: 1
+    driver:
+      options:
+        amazonec2-instance-type: ["t2.medium"]
+  apps:
+    size: 1
+    dedicated: true
+    driver:
+      options:
+        amazonec2-instance-type: ["t2.small"]
+
+driver:
+  name: amazonec2
+  options:
+    amazonec2-access-key: VAR_ACCESS_KEY
+    amazonec2-secret-key: VAR_SECRET_KEY
+    amazonec2-vpc-id: VAR_VPC
+    amazonec2-subnet-id: VAR_SUBNET
