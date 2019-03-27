@@ -4,8 +4,8 @@
 	info \
 	undo
 
-VPC = `cat ../10-aws-vpc/terraform.tfstate | jq '.modules[0].resources."aws_vpc.tcc-vpc".primary.id'`
-SUBNET = `cat ../10-aws-vpc/terraform.tfstate | jq '.modules[0].resources."aws_subnet.tcc-subnet".primary.id'`
+VPC = `cat ../10-aws-vpc/terraform.tfstate | jq '.modules[0].resources."aws_vpc.pushaas-vpc".primary.id'`
+SUBNET = `cat ../10-aws-vpc/terraform.tfstate | jq '.modules[0].resources."aws_subnet.pushaas-subnet".primary.id'`
 ACCESS_KEY = `cat ~/.aws/credentials | grep aws_access_key_id | cut -d " " -f 3`
 SECRET_KEY = `cat ~/.aws/credentials | grep aws_secret_access_key | cut -d " " -f 3`
 
@@ -17,7 +17,7 @@ config:
 
 do: config
 	tsuru install-create -c install-config.yml
-	#$(GOBIN)/tsuru install-create -c install-config.yml
 
 undo: config
 	tsuru install-remove -c install-config.yml
+	sleep 5

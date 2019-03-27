@@ -4,12 +4,14 @@ hosts:
     driver:
       options:
         amazonec2-instance-type: ["t2.small"]
+        amazonec2-security-group: ["default"]
   apps:
     size: 1
     dedicated: true
     driver:
       options:
         amazonec2-instance-type: ["t2.small"]
+        amazonec2-security-group: ["default"]
 
 driver:
   name: amazonec2
