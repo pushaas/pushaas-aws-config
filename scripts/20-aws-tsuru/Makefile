@@ -19,5 +19,5 @@ do: config
 	tsuru install-create -c install-config.yml
 
 undo: config
-	tsuru install-remove -c install-config.yml
+	tsuru install-remove -y -c install-config.yml
 	sleep 5
