@@ -6,7 +6,7 @@
 	undo
 
 info:
-	@echo "Setup infrastructure for the PushaaS project"
+	@echo "Setup Tsuru infrastructure"
 
 ###################
 # main

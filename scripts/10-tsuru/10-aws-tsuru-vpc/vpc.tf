@@ -3,12 +3,12 @@ provider "aws" {
   region     = "us-east-1"
 }
 
-resource "aws_vpc" "pushaas-vpc" {
+resource "aws_vpc" "tsuru-vpc" {
   cidr_block = "10.0.0.0/16"
 }
 
 resource "aws_default_security_group" "default" {
-  vpc_id = "${aws_vpc.pushaas-vpc.id}"
+  vpc_id = "${aws_vpc.tsuru-vpc.id}"
 
   ingress {
     protocol  = -1
@@ -32,8 +32,8 @@ resource "aws_default_security_group" "default" {
   }
 }
 
-resource "aws_subnet" "pushaas-subnet" {
-  vpc_id     = "${aws_vpc.pushaas-vpc.id}"
+resource "aws_subnet" "tsuru-subnet" {
+  vpc_id     = "${aws_vpc.tsuru-vpc.id}"
   cidr_block = "10.0.1.0/24"
   availability_zone = "us-east-1a"
 
@@ -43,7 +43,7 @@ resource "aws_subnet" "pushaas-subnet" {
 }
 
 resource "aws_internet_gateway" "gw" {
-  vpc_id = "${aws_vpc.pushaas-vpc.id}"
+  vpc_id = "${aws_vpc.tsuru-vpc.id}"
 
   tags {
     Name = "VPC IGW"
@@ -52,7 +52,7 @@ resource "aws_internet_gateway" "gw" {
 
 # Define the route table
 resource "aws_route_table" "web-public-rt" {
-  vpc_id = "${aws_vpc.pushaas-vpc.id}"
+  vpc_id = "${aws_vpc.tsuru-vpc.id}"
 
   route {
     cidr_block = "0.0.0.0/0"
@@ -66,6 +66,14 @@ resource "aws_route_table" "web-public-rt" {
 
 # Assign the route table to the public Subnet
 resource "aws_route_table_association" "web-public-rt" {
-  subnet_id = "${aws_subnet.pushaas-subnet.id}"
+  subnet_id = "${aws_subnet.tsuru-subnet.id}"
   route_table_id = "${aws_route_table.web-public-rt.id}"
+}
+
+output "vpc" {
+  value = "${aws_vpc.tsuru-vpc.id}"
+}
+
+output "subnet" {
+  value = "${aws_subnet.tsuru-subnet.id}"
 }
