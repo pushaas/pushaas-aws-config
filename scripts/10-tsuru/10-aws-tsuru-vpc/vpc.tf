@@ -3,11 +3,10 @@ provider "aws" {
   region     = "us-east-1"
 }
 
-resource "aws_vpc" "tsuru-vpc" {
-  cidr_block = "10.0.0.0/16"
-}
-
-resource "aws_default_security_group" "default" {
+###################
+# security
+###################
+resource "aws_default_security_group" "tsuru-default" {
   vpc_id = "${aws_vpc.tsuru-vpc.id}"
 
   ingress {
@@ -32,6 +31,13 @@ resource "aws_default_security_group" "default" {
   }
 }
 
+###################
+# network
+###################
+resource "aws_vpc" "tsuru-vpc" {
+  cidr_block = "10.0.0.0/16"
+}
+
 resource "aws_subnet" "tsuru-subnet" {
   vpc_id     = "${aws_vpc.tsuru-vpc.id}"
   cidr_block = "10.0.1.0/24"
@@ -42,7 +48,7 @@ resource "aws_subnet" "tsuru-subnet" {
   }
 }
 
-resource "aws_internet_gateway" "gw" {
+resource "aws_internet_gateway" "tsuru-gw" {
   vpc_id = "${aws_vpc.tsuru-vpc.id}"
 
   tags {
@@ -50,13 +56,12 @@ resource "aws_internet_gateway" "gw" {
   }
 }
 
-# Define the route table
-resource "aws_route_table" "web-public-rt" {
+resource "aws_route_table" "tsuru-web-public-rt" {
   vpc_id = "${aws_vpc.tsuru-vpc.id}"
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.gw.id}"
+    gateway_id = "${aws_internet_gateway.tsuru-gw.id}"
   }
 
   tags {
@@ -64,10 +69,9 @@ resource "aws_route_table" "web-public-rt" {
   }
 }
 
-# Assign the route table to the public Subnet
-resource "aws_route_table_association" "web-public-rt" {
+resource "aws_route_table_association" "tsuru-web-public-rt" {
   subnet_id = "${aws_subnet.tsuru-subnet.id}"
-  route_table_id = "${aws_route_table.web-public-rt.id}"
+  route_table_id = "${aws_route_table.tsuru-web-public-rt.id}"
 }
 
 output "vpc" {

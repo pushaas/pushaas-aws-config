@@ -6,8 +6,8 @@
 	plan-undo \
 	undo
 
-VPC = `cat ../10-aws-tsuru-vpc/terraform.tfstate | jq '.modules[0].resources."aws_vpc.tsuru-vpc".primary.id'`
-SUBNET = `cat ../10-aws-tsuru-vpc/terraform.tfstate | jq '.modules[0].resources."aws_subnet.tsuru-subnet".primary.id'`
+VPC = `cat ../10-aws-tsuru-vpc/terraform.tfstate | jq '.modules[0].outputs.vpc.value'`
+SUBNET = `cat ../10-aws-tsuru-vpc/terraform.tfstate | jq '.modules[0].outputs.subnet.value'`
 ACCESS_KEY = `cat ~/.aws/credentials | grep aws_access_key_id | cut -d " " -f 3`
 SECRET_KEY = `cat ~/.aws/credentials | grep aws_secret_access_key | cut -d " " -f 3`
 

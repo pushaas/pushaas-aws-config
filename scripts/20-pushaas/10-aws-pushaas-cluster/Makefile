@@ -7,7 +7,7 @@
 	undo
 
 info:
-	@echo "Create Tsuru VPC and SUBNET on AWS"
+	@echo "Create PushaaS cluster on AWS"
 
 setup:
 	terraform init
