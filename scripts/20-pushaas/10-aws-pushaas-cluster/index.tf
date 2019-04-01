@@ -309,11 +309,6 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "aws_az" {
-  description = "The AWS availability zone"
-  default     = "us-east-1a"
-}
-
 variable "app_image" {
   description = "Docker image to run in the ECS cluster"
   default     = "nginx:alpine"
