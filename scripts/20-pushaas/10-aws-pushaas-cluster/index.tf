@@ -1,374 +1,39 @@
-# ########################################
-# # lb
-# ########################################
-# resource "aws_lb" "pushaas-app-lb" {
-#   name            = "pushaas-app-load-balancer"
-#   load_balancer_type = "application"
-#   subnets         = ["${aws_subnet.pushaas-public-subnet.*.id}"]
-#   security_groups = ["${aws_security_group.pushaas-app-lb-sg.id}"]
-# }
-#
-# resource "aws_lb_target_group" "pushaas-app" {
-#   name        = "pushaas-app-target-group"
-#   port        = 80
-#   protocol    = "HTTP"
-#   vpc_id      = "${aws_vpc.pushaas-vpc.id}"
-#   target_type = "ip"
-#
-#   health_check {
-#     healthy_threshold   = "3"
-#     interval            = "30"
-#     protocol            = "HTTP"
-#     matcher             = "200"
-#     timeout             = "3"
-#     path                = "${var.health_check_path}"
-#     unhealthy_threshold = "2"
-#   }
-# }
-#
-# # Redirect all traffic from the LB to the target group
-# resource "aws_lb_listener" "pushaas-app" {
-#   load_balancer_arn = "${aws_lb.pushaas-app-lb.id}"
-#   port              = "${var.app_port}"
-#   protocol          = "HTTP"
-#
-#   default_action {
-#     target_group_arn = "${aws_lb_target_group.pushaas-app.id}"
-#     type             = "forward"
-#   }
-# }
-#
-# ########################################
-# # ecs
-# ########################################
-# data "template_file" "pushaas_app" {
-#   template = "${file("templates/ecs/pushaas.json.tpl")}"
-#
-#   vars {
-#     app_image      = "${var.app_image}"
-#     app_port       = "${var.app_port}"
-#     aws_region     = "${var.aws_region}"
-#     fargate_cpu    = "${var.fargate_cpu}"
-#     fargate_memory = "${var.fargate_memory}"
-#   }
-# }
-#
-# resource "aws_ecs_cluster" "pushaas-cluster" {
-#   name = "pushaas-cluster"
-# }
-#
-# resource "aws_ecs_task_definition" "pushaas-app" {
-#   family                   = "pushaas-app-task"
-#   execution_role_arn       = "${aws_iam_role.task_execution_role.arn}"
-#   network_mode             = "awsvpc"
-#   requires_compatibilities = ["FARGATE"]
-#   cpu                      = "${var.fargate_cpu}"
-#   memory                   = "${var.fargate_memory}"
-#   container_definitions    = "${data.template_file.pushaas_app.rendered}"
-# }
-#
-# resource "aws_ecs_service" "pushaas-app" {
-#   name            = "pushaas-app-service"
-#   cluster         = "${aws_ecs_cluster.pushaas-cluster.id}"
-#   task_definition = "${aws_ecs_task_definition.pushaas-app.arn}"
-#   desired_count   = "${var.app_count}"
-#   launch_type     = "FARGATE"
-#
-#   network_configuration {
-#     security_groups  = ["${aws_security_group.pushaas-ecs-tasks-sg.id}"]
-#     subnets          = ["${aws_subnet.pushaas-private-subnet.*.id}"]
-#     assign_public_ip = true
-#   }
-#
-#   load_balancer {
-#     target_group_arn = "${aws_lb_target_group.pushaas-app.id}"
-#     container_name   = "pushaas-app"
-#     container_port   = "${var.app_port}"
-#   }
-#
-#   depends_on = [
-#     "aws_lb_listener.pushaas-app",
-#   ]
-# }
-#
-# ########################################
-# # logs
-# ########################################
-# # Set up cloudwatch group and log stream and retain logs for 30 days
-# resource "aws_cloudwatch_log_group" "pushaas-log-group" {
-#   name              = "/ecs/pushaas"
-#   retention_in_days = 30
-#
-#   tags {
-#     Name = "pushaas-log-group"
-#   }
-# }
-#
-# resource "aws_cloudwatch_log_stream" "pushaas-log-stream" {
-#   name           = "pushaas-log-stream"
-#   log_group_name = "${aws_cloudwatch_log_group.pushaas-log-group.name}"
-# }
-#
-# ########################################
-# # network
-# ########################################
-# # Fetch AZs in the current region
-# data "aws_availability_zones" "available" {}
-#
-# resource "aws_vpc" "pushaas-vpc" {
-#   cidr_block = "10.0.0.0/16"
-# }
-#
-# # Create var.az_count private subnets, each in a different AZ
-# resource "aws_subnet" "pushaas-private-subnet" {
-#   count             = "${var.az_count}"
-#   cidr_block        = "${cidrsubnet(aws_vpc.pushaas-vpc.cidr_block, 8, count.index)}"
-#   availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
-#   vpc_id            = "${aws_vpc.pushaas-vpc.id}"
-# }
-#
-# # Create var.az_count public subnets, each in a different AZ
-# resource "aws_subnet" "pushaas-public-subnet" {
-#   count                   = "${var.az_count}"
-#   cidr_block              = "${cidrsubnet(aws_vpc.pushaas-vpc.cidr_block, 8, var.az_count + count.index)}"
-#   availability_zone       = "${data.aws_availability_zones.available.names[count.index]}"
-#   vpc_id                  = "${aws_vpc.pushaas-vpc.id}"
-#   map_public_ip_on_launch = true
-# }
-#
-# # IGW for the public subnet
-# resource "aws_internet_gateway" "pushaas-gw" {
-#   vpc_id = "${aws_vpc.pushaas-vpc.id}"
-# }
-#
-# # Route the public subnet trafic through the IGW
-# resource "aws_route" "pushaas-internet-access" {
-#   route_table_id         = "${aws_vpc.pushaas-vpc.main_route_table_id}"
-#   destination_cidr_block = "0.0.0.0/0"
-#   gateway_id             = "${aws_internet_gateway.pushaas-gw.id}"
-# }
-#
-# # Create a NAT gateway with an EIP for each private subnet to get internet connectivity
-# resource "aws_eip" "pushaas-eip" {
-#   count      = "${var.az_count}"
-#   vpc        = true
-#   depends_on = ["aws_internet_gateway.pushaas-gw"]
-# }
-#
-# resource "aws_nat_gateway" "pushaas-nat-gw" {
-#   count         = "${var.az_count}"
-#   subnet_id     = "${element(aws_subnet.pushaas-public-subnet.*.id, count.index)}"
-#   allocation_id = "${element(aws_eip.pushaas-eip.*.id, count.index)}"
-# }
-#
-# # Create a new route table for the private subnets, make it route non-local traffic through the NAT gateway to the internet
-# resource "aws_route_table" "pushaas-private-rt" {
-#   count  = "${var.az_count}"
-#   vpc_id = "${aws_vpc.pushaas-vpc.id}"
-#
-#   route {
-#     cidr_block     = "0.0.0.0/0"
-#     nat_gateway_id = "${element(aws_nat_gateway.pushaas-nat-gw.*.id, count.index)}"
-#   }
-# }
-#
-# # Explicitly associate the newly created route tables to the private subnets (so they don't default to the main route table)
-# resource "aws_route_table_association" "pushaas-rt-association" {
-#   count          = "${var.az_count}"
-#   subnet_id      = "${element(aws_subnet.pushaas-private-subnet.*.id, count.index)}"
-#   route_table_id = "${element(aws_route_table.pushaas-private-rt.*.id, count.index)}"
-# }
-#
-# ########################################
-# # outputs
-# ########################################
-# output "pushaas-app-lb-hostname" {
-#   value = "${aws_lb.pushaas-app-lb.dns_name}"
-# }
-#
-# ########################################
-# # provider
-# ########################################
-# provider "aws" {
-#   version = "~> 2.3"
-#   shared_credentials_file = "$HOME/.aws/credentials"
-#   profile                 = "default"
-#   region                  = "${var.aws_region}"
-# }
-#
-# ########################################
-# # roles
-# ########################################
-# resource "aws_iam_role" "task_execution_role" {
-#   name = "fargate-task-execution-role"
-#   assume_role_policy = <<EOF
-# {
-#     "Version": "2008-10-17",
-#     "Statement": [
-#         {
-#             "Sid": "",
-#             "Effect": "Allow",
-#             "Principal": {
-#                 "Service": "ecs-tasks.amazonaws.com"
-#             },
-#             "Action": "sts:AssumeRole"
-#         }
-#     ]
-# }
-# EOF
-# }
-#
-# resource "aws_iam_policy" "task_execution_policy" {
-#   name        = "fargate-task-execution-policy"
-#   path        = "/"
-#   policy = <<EOF
-# {
-#     "Version": "2012-10-17",
-#     "Statement": [
-#         {
-#             "Effect": "Allow",
-#             "Action": [
-#                 "ecs:DescribeServices",
-#                 "ecs:UpdateService"
-#             ],
-#             "Resource": [
-#                 "*"
-#             ]
-#         },
-#         {
-#             "Effect": "Allow",
-#             "Action": [
-#                 "cloudwatch:DescribeAlarms",
-#                 "cloudwatch:PutMetricAlarm"
-#             ],
-#             "Resource": [
-#                 "*"
-#             ]
-#         }
-#     ]
-# }
-# EOF
-# }
-#
-# resource "aws_iam_role_policy_attachment" "task-execution-attach" {
-#   depends_on = ["aws_iam_role.task_execution_role"]
-#   role       = "${aws_iam_role.task_execution_role.name}"
-#   policy_arn = "${aws_iam_policy.task_execution_policy.arn}"
-# }
-#
-# ########################################
-# # security
-# ########################################
-# # LB Security Group: Edit this to restrict access to the application
-# resource "aws_security_group" "pushaas-app-lb-sg" {
-#   name        = "pushaas-app-load-balancer-security-group"
-#   description = "controls access to the LB"
-#   vpc_id      = "${aws_vpc.pushaas-vpc.id}"
-#
-#   ingress {
-#     protocol    = "tcp"
-#     from_port   = "${var.app_port}"
-#     to_port     = "${var.app_port}"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-#
-#   egress {
-#     protocol    = "-1"
-#     from_port   = 0
-#     to_port     = 0
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-# }
-#
-# # Traffic to the ECS cluster should only come from the LB
-# resource "aws_security_group" "pushaas-ecs-tasks-sg" {
-#   name        = "pushaas-ecs-tasks-sg"
-#   description = "allow inbound access from the LB only"
-#   vpc_id      = "${aws_vpc.pushaas-vpc.id}"
-#
-#   ingress {
-#     protocol        = "tcp"
-#     from_port       = "${var.app_port}"
-#     to_port         = "${var.app_port}"
-#     security_groups = ["${aws_security_group.pushaas-app-lb-sg.id}"]
-#   }
-#
-#   egress {
-#     protocol    = "-1"
-#     from_port   = 0
-#     to_port     = 0
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-# }
-#
-# ########################################
-# # variables
-# ########################################
-# variable "aws_region" {
-#   description = "The AWS region things are created in"
-#   default     = "us-east-1"
-# }
-#
-# variable "app_image" {
-#   description = "Docker image to run in the ECS cluster"
-#   default     = "nginx:alpine"
-# }
-#
-# variable "app_port" {
-#   description = "Port exposed by the docker image to redirect traffic to"
-#   default     = 80
-# }
-#
-# variable "app_count" {
-#   description = "Number of docker containers to run"
-#   default     = 3
-# }
-#
-# variable "az_count" {
-#   description = "Number of AZs to cover in a given region"
-#   default     = "2"
-# }
-#
-# variable "fargate_cpu" {
-#   description = "Fargate instance CPU units to provision (1 vCPU = 1024 CPU units)"
-#   default     = "1024"
-# }
-#
-# variable "fargate_memory" {
-#   description = "Fargate instance memory to provision (in MiB)"
-#   default     = "2048"
-# }
-#
-# variable "health_check_path" {
-#   default = "/"
-# }
+########################################
+# provider
+########################################
+provider "aws" {
+  version = "~> 2.3"
+  shared_credentials_file = "$HOME/.aws/credentials"
+  profile                 = "default"
+  region                  = "${var.aws_region}"
+}
 
 ########################################
 # variables
 ########################################
 variable "aws_region" {
-  description = "The AWS region to create things in."
+  description = "The AWS region things are created in"
   default     = "us-east-1"
 }
 
-variable "az_count" {
-  description = "Number of AZs to cover in a given AWS region"
-  default     = "2"
+variable "aws_az" {
+  description = "The AWS AZ things are created in"
+  default     = "us-east-1a"
 }
 
 variable "app_image" {
   description = "Docker image to run in the ECS cluster"
-  default     = "adongy/hostname-docker:latest"
+  default     = "nginx:latest"
 }
 
 variable "app_port" {
   description = "Port exposed by the docker image to redirect traffic to"
-  default     = 3000
+  default     = 80
 }
 
 variable "app_count" {
   description = "Number of docker containers to run"
-  default     = 2
+  default     = 1
 }
 
 variable "fargate_cpu" {
@@ -381,174 +46,20 @@ variable "fargate_memory" {
   default     = "512"
 }
 
-########################################
-# outputs
-########################################
-output "alb_hostname" {
-  value = "${aws_alb.main.dns_name}"
+variable "health_check_path" {
+  default = "/"
 }
 
 ########################################
-# main
+# ecs
 ########################################
-provider "aws" {
-  version = "~> 2.3"
-  shared_credentials_file = "$HOME/.aws/credentials"
-  profile                 = "default"
-  region                  = "${var.aws_region}"
+resource "aws_ecs_cluster" "pushaas-cluster" {
+  name = "pushaas-cluster"
 }
 
-### Network
-
-# Fetch AZs in the current region
-data "aws_availability_zones" "available" {}
-
-resource "aws_vpc" "main" {
-  cidr_block = "172.17.0.0/16"
-}
-
-# Create var.az_count private subnets, each in a different AZ
-resource "aws_subnet" "private" {
-  count             = "${var.az_count}"
-  cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)}"
-  availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
-  vpc_id            = "${aws_vpc.main.id}"
-}
-
-# Create var.az_count public subnets, each in a different AZ
-resource "aws_subnet" "public" {
-  count                   = "${var.az_count}"
-  cidr_block              = "${cidrsubnet(aws_vpc.main.cidr_block, 8, var.az_count + count.index)}"
-  availability_zone       = "${data.aws_availability_zones.available.names[count.index]}"
-  vpc_id                  = "${aws_vpc.main.id}"
-  map_public_ip_on_launch = true
-}
-
-# IGW for the public subnet
-resource "aws_internet_gateway" "gw" {
-  vpc_id = "${aws_vpc.main.id}"
-}
-
-# Route the public subnet traffic through the IGW
-resource "aws_route" "internet_access" {
-  route_table_id         = "${aws_vpc.main.main_route_table_id}"
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = "${aws_internet_gateway.gw.id}"
-}
-
-# Create a NAT gateway with an EIP for each private subnet to get internet connectivity
-resource "aws_eip" "gw" {
-  count      = "${var.az_count}"
-  vpc        = true
-  depends_on = ["aws_internet_gateway.gw"]
-}
-
-resource "aws_nat_gateway" "gw" {
-  count         = "${var.az_count}"
-  subnet_id     = "${element(aws_subnet.public.*.id, count.index)}"
-  allocation_id = "${element(aws_eip.gw.*.id, count.index)}"
-}
-
-# Create a new route table for the private subnets
-# And make it route non-local traffic through the NAT gateway to the internet
-resource "aws_route_table" "private" {
-  count  = "${var.az_count}"
-  vpc_id = "${aws_vpc.main.id}"
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    nat_gateway_id = "${element(aws_nat_gateway.gw.*.id, count.index)}"
-  }
-}
-
-# Explicitely associate the newly created route tables to the private subnets (so they don't default to the main route table)
-resource "aws_route_table_association" "private" {
-  count          = "${var.az_count}"
-  subnet_id      = "${element(aws_subnet.private.*.id, count.index)}"
-  route_table_id = "${element(aws_route_table.private.*.id, count.index)}"
-}
-
-### Security
-
-# ALB Security group
-# This is the group you need to edit if you want to restrict access to your application
-resource "aws_security_group" "lb" {
-  name        = "tf-ecs-alb"
-  description = "controls access to the ALB"
-  vpc_id      = "${aws_vpc.main.id}"
-
-  ingress {
-    protocol    = "tcp"
-    from_port   = 80
-    to_port     = 80
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-# Traffic to the ECS Cluster should only come from the ALB
-resource "aws_security_group" "ecs_tasks" {
-  name        = "tf-ecs-tasks"
-  description = "allow inbound access from the ALB only"
-  vpc_id      = "${aws_vpc.main.id}"
-
-  ingress {
-    protocol        = "tcp"
-    from_port       = "${var.app_port}"
-    to_port         = "${var.app_port}"
-    security_groups = ["${aws_security_group.lb.id}"]
-  }
-
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-### ALB
-
-resource "aws_alb" "main" {
-  name            = "tf-ecs-chat"
-  subnets         = ["${aws_subnet.public.*.id}"]
-  security_groups = ["${aws_security_group.lb.id}"]
-}
-
-resource "aws_alb_target_group" "app" {
-  name        = "tf-ecs-chat"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = "${aws_vpc.main.id}"
-  target_type = "ip"
-}
-
-# Redirect all traffic from the ALB to the target group
-resource "aws_alb_listener" "front_end" {
-  load_balancer_arn = "${aws_alb.main.id}"
-  port              = "80"
-  protocol          = "HTTP"
-
-  default_action {
-    target_group_arn = "${aws_alb_target_group.app.id}"
-    type             = "forward"
-  }
-}
-
-### ECS
-
-resource "aws_ecs_cluster" "main" {
-  name = "tf-ecs-cluster"
-}
-
-resource "aws_ecs_task_definition" "app" {
-  family                   = "app"
+resource "aws_ecs_task_definition" "pushaas-app" {
+  family                   = "pushaas-app-task"
+  execution_role_arn       = "${data.aws_iam_role.task_execution_role.arn}"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "${var.fargate_cpu}"
@@ -559,9 +70,20 @@ resource "aws_ecs_task_definition" "app" {
   {
     "cpu": ${var.fargate_cpu},
     "image": "${var.app_image}",
-    "memory": ${var.fargate_memory},
-    "name": "app",
+    "memoryReservation": ${var.fargate_memory},
+    "name": "pushaas-app",
     "networkMode": "awsvpc",
+    "entryPoint": [],
+    "command": [],
+    "links": [],
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/pushaas",
+          "awslogs-region": "${var.aws_region}",
+          "awslogs-stream-prefix": "ecs"
+        }
+    },
     "portMappings": [
       {
         "containerPort": ${var.app_port},
@@ -573,25 +95,124 @@ resource "aws_ecs_task_definition" "app" {
 DEFINITION
 }
 
-resource "aws_ecs_service" "main" {
-  name            = "tf-ecs-service"
-  cluster         = "${aws_ecs_cluster.main.id}"
-  task_definition = "${aws_ecs_task_definition.app.arn}"
+resource "aws_ecs_service" "pushaas-app" {
+  name            = "pushaas-app-service"
+  cluster         = "${aws_ecs_cluster.pushaas-cluster.id}"
+  task_definition = "${aws_ecs_task_definition.pushaas-app.arn}"
   desired_count   = "${var.app_count}"
   launch_type     = "FARGATE"
 
   network_configuration {
-    security_groups = ["${aws_security_group.ecs_tasks.id}"]
-    subnets         = ["${aws_subnet.private.*.id}"]
+    security_groups  = ["${aws_security_group.pushaas-app-sg.id}"]
+    subnets          = ["${aws_subnet.pushaas-public-subnet.id}"]
+    assign_public_ip = true
   }
+}
 
-  load_balancer {
-    target_group_arn = "${aws_alb_target_group.app.id}"
-    container_name   = "app"
-    container_port   = "${var.app_port}"
+########################################
+# logs
+########################################
+# Set up cloudwatch group and log stream and retain logs for 30 days
+resource "aws_cloudwatch_log_group" "pushaas-log-group" {
+  name              = "/ecs/pushaas"
+  retention_in_days = 30
+
+  tags {
+    Name = "pushaas-log-group"
   }
+}
 
-  depends_on = [
-    "aws_alb_listener.front_end",
+resource "aws_cloudwatch_log_stream" "pushaas-log-stream" {
+  name           = "pushaas-log-stream"
+  log_group_name = "${aws_cloudwatch_log_group.pushaas-log-group.name}"
+}
+
+########################################
+# network
+########################################
+resource "aws_vpc" "pushaas-vpc" {
+  cidr_block = "10.0.0.0/16"
+  enable_dns_hostnames    = true
+}
+
+resource "aws_subnet" "pushaas-public-subnet" {
+  cidr_block              = "${cidrsubnet(aws_vpc.pushaas-vpc.cidr_block, 8, 0)}"
+  availability_zone       = "${var.aws_az}"
+  vpc_id                  = "${aws_vpc.pushaas-vpc.id}"
+  map_public_ip_on_launch = true
+}
+
+# IGW for the public subnet
+resource "aws_internet_gateway" "pushaas-gw" {
+  vpc_id = "${aws_vpc.pushaas-vpc.id}"
+}
+
+# Route the public subnet trafic through the IGW
+resource "aws_route" "pushaas-internet-access" {
+  route_table_id         = "${aws_vpc.pushaas-vpc.main_route_table_id}"
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = "${aws_internet_gateway.pushaas-gw.id}"
+}
+
+########################################
+# roles
+########################################
+data "aws_iam_role" "task_execution_role" {
+  name = "ecsTaskExecutionRole"
+}
+
+resource "aws_iam_policy" "task_execution_policy" {
+  name        = "AmazonECSTaskExecutionRolePolicy"
+  path        = "/"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    }
   ]
 }
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "task-execution-attach" {
+  role       = "${data.aws_iam_role.task_execution_role.name}"
+  policy_arn = "${aws_iam_policy.task_execution_policy.arn}"
+}
+
+########################################
+# security
+########################################
+resource "aws_security_group" "pushaas-app-sg" {
+  name        = "pushaas-app-security-group"
+  description = "controls access to the pushaas app"
+  vpc_id      = "${aws_vpc.pushaas-vpc.id}"
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = "${var.app_port}"
+    to_port     = "${var.app_port}"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+########################################
+# outputs
+########################################
