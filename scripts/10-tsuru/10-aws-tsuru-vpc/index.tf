@@ -3,6 +3,11 @@ provider "aws" {
   region     = "us-east-1"
 }
 
+variable "aws_az" {
+  description = "The AWS AZ things are created in"
+  default     = "us-east-1a"
+}
+
 ###################
 # security
 ###################
@@ -40,8 +45,8 @@ resource "aws_vpc" "tsuru-vpc" {
 
 resource "aws_subnet" "tsuru-subnet" {
   vpc_id     = "${aws_vpc.tsuru-vpc.id}"
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "us-east-1a"
+  cidr_block = "${cidrsubnet(aws_vpc.tsuru-vpc.cidr_block, 8, 0)}"
+  availability_zone = "${var.aws_az}"
 
   tags = {
     Name = "Main"

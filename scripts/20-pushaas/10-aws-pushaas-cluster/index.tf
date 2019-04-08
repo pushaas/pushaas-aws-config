@@ -131,14 +131,14 @@ resource "aws_cloudwatch_log_stream" "pushaas-log-stream" {
 # network
 ########################################
 resource "aws_vpc" "pushaas-vpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = "172.16.0./16"
   enable_dns_hostnames    = true
 }
 
 resource "aws_subnet" "pushaas-public-subnet" {
+  vpc_id                  = "${aws_vpc.pushaas-vpc.id}"
   cidr_block              = "${cidrsubnet(aws_vpc.pushaas-vpc.cidr_block, 8, 0)}"
   availability_zone       = "${var.aws_az}"
-  vpc_id                  = "${aws_vpc.pushaas-vpc.id}"
   map_public_ip_on_launch = true
 }
 
