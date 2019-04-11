@@ -25,8 +25,9 @@ plan-do: info
 plan-undo: info
 
 do: config
-	tsuru install-create -c install-config.yml
+	tsuru -v 2 install-create -c install-config.yml
+	sleep 10
 
 undo: config
 	tsuru install-remove -y -c install-config.yml
-	sleep 5
+	sleep 10

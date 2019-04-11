@@ -15,10 +15,10 @@ resource "aws_default_security_group" "tsuru-default" {
   vpc_id = "${aws_vpc.tsuru-vpc.id}"
 
   ingress {
-    protocol  = -1
-    self      = true
+    protocol  = "tcp"
     from_port = 0
-    to_port   = 0
+    to_port   = 65535
+    self      = true
   }
 
   ingress {
@@ -41,6 +41,10 @@ resource "aws_default_security_group" "tsuru-default" {
 ###################
 resource "aws_vpc" "tsuru-vpc" {
   cidr_block = "10.0.0.0/16"
+
+  tags = {
+    Name = "tsuru"
+  }
 }
 
 resource "aws_subnet" "tsuru-subnet" {
@@ -49,7 +53,7 @@ resource "aws_subnet" "tsuru-subnet" {
   availability_zone = "${var.aws_az}"
 
   tags = {
-    Name = "Main"
+    Name = "tsuru"
   }
 }
 
