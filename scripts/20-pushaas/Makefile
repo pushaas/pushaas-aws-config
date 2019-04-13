@@ -3,10 +3,14 @@
 	info \
 	plan-do \
 	plan-undo \
+	setup \
 	undo
 
 info:
 	@echo "Setup infrastructure for the PushaaS service"
+
+setup: info
+	@./index.sh "setup"
 
 ###################
 # main

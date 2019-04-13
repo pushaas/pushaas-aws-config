@@ -4,6 +4,7 @@
 	info \
 	plan-do \
 	plan-undo \
+	setup \
 	undo
 
 VPC = `cat ../10-aws-tsuru-vpc/terraform.tfstate | jq '.modules[0].outputs.vpc.value'`
@@ -13,6 +14,9 @@ SECRET_KEY = `cat ./aws_credentials | grep aws_secret_access_key | cut -d " " -f
 
 info:
 	@echo "Create a Tsuru installation on AWS"
+
+setup:
+	@echo "done!"
 
 config:
 	@sed "s/VAR_VPC/$(VPC)/; s/VAR_SUBNET/$(SUBNET)/; s/VAR_ACCESS_KEY/$(ACCESS_KEY)/; s/VAR_SECRET_KEY/$(SECRET_KEY)/;" template-install-config.yml > install-config.yml

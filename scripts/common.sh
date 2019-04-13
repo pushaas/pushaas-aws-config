@@ -33,6 +33,10 @@ make_children() {
 	done
 }
 
+setup_children() {
+	make_children ordered_dirs "setup"
+}
+
 do_children() {
 	make_children ordered_dirs "do"
 }
@@ -51,7 +55,9 @@ plan_undo_children() {
 
 main() {
 	local TASK=$1
-	if [ "$TASK" = "do" ]; then
+	if [ "$TASK" = "setup" ]; then
+		setup_children
+	elif [ "$TASK" = "do" ]; then
 		do_children
 	elif [ "$TASK" = "undo" ]; then
 		undo_children

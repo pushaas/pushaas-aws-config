@@ -7,22 +7,20 @@
 	undo
 
 info:
-	@echo "Setup Tsuru infrastructure"
+	@echo "Setup VPC peering between Tsuru VPC and Pushaas VPC"
 
-setup: info
-	@./index.sh "setup"
+setup:
+	terraform init
 
 ###################
 # main
 ###################
 plan-do: info
-	@./index.sh "plan-do"
 
 plan-undo: info
-	@./index.sh "plan-undo"
 
 do:
-	@./index.sh "do"
+	terraform apply -auto-approve
 
 undo:
-	@./index.sh "undo"
+	terraform destroy -auto-approve
