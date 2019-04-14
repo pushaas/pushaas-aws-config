@@ -104,7 +104,7 @@ resource "aws_ecs_service" "pushaas-app" {
 
   network_configuration {
     security_groups  = ["${aws_security_group.pushaas-app-sg.id}"]
-    subnets          = ["${aws_subnet.pushaas-public-subnet.id}"]
+    subnets          = ["${aws_subnet.pushaas-private-subnet.id}"]
     assign_public_ip = true
   }
 }
@@ -135,11 +135,11 @@ resource "aws_vpc" "pushaas-vpc" {
   enable_dns_hostnames    = true
 }
 
-resource "aws_subnet" "pushaas-public-subnet" {
+resource "aws_subnet" "pushaas-private-subnet" {
   vpc_id                  = "${aws_vpc.pushaas-vpc.id}"
   cidr_block              = "${cidrsubnet(aws_vpc.pushaas-vpc.cidr_block, 8, 0)}"
   availability_zone       = "${var.aws_az}"
-  map_public_ip_on_launch = true
+  # map_public_ip_on_launch = true
 }
 
 # IGW for the public subnet
@@ -216,3 +216,10 @@ resource "aws_security_group" "pushaas-app-sg" {
 ########################################
 # outputs
 ########################################
+output "vpc" {
+  value = "${aws_vpc.pushaas-vpc.id}"
+}
+
+output "subnet" {
+  value = "${aws_subnet.pushaas-private-subnet.id}"
+}
