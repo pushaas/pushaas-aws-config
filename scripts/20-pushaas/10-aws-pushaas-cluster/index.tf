@@ -104,7 +104,7 @@ resource "aws_ecs_service" "pushaas-app" {
 
   network_configuration {
     security_groups  = ["${aws_security_group.pushaas-app-sg.id}"]
-    subnets          = ["${aws_subnet.pushaas-private-subnet.id}"]
+    subnets          = ["${aws_subnet.pushaas-subnet.id}"]
     assign_public_ip = true
   }
 }
@@ -118,7 +118,7 @@ resource "aws_cloudwatch_log_group" "pushaas-log-group" {
   retention_in_days = 30
 
   tags {
-    Name = "pushaas-log-group"
+    Name = "pushaas"
   }
 }
 
@@ -132,24 +132,54 @@ resource "aws_cloudwatch_log_stream" "pushaas-log-stream" {
 ########################################
 resource "aws_vpc" "pushaas-vpc" {
   cidr_block = "172.16.0.0/16"
-  enable_dns_hostnames    = true
+  enable_dns_hostnames = true
+  enable_dns_support = true
+
+  tags {
+    Name = "pushaas"
+  }
 }
 
-resource "aws_subnet" "pushaas-private-subnet" {
+resource "aws_subnet" "pushaas-subnet" {
   vpc_id                  = "${aws_vpc.pushaas-vpc.id}"
   cidr_block              = "${cidrsubnet(aws_vpc.pushaas-vpc.cidr_block, 8, 0)}"
   availability_zone       = "${var.aws_az}"
   # map_public_ip_on_launch = true
+
+  tags {
+    Name = "pushaas"
+  }
 }
 
 # IGW for the public subnet
 resource "aws_internet_gateway" "pushaas-gw" {
   vpc_id = "${aws_vpc.pushaas-vpc.id}"
+
+  tags {
+    Name = "pushaas"
+  }
 }
 
-# Route the public subnet trafic through the IGW
+resource "aws_route_table" "pushaas-rt" {
+  vpc_id = "${aws_vpc.pushaas-vpc.id}"
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.pushaas-gw.id}"
+  }
+
+  tags {
+    Name = "pushaas"
+  }
+}
+
+resource "aws_route_table_association" "pushaas-rt" {
+  subnet_id = "${aws_subnet.pushaas-subnet.id}"
+  route_table_id = "${aws_route_table.pushaas-rt.id}"
+}
+
 resource "aws_route" "pushaas-internet-access" {
-  route_table_id         = "${aws_vpc.pushaas-vpc.main_route_table_id}"
+  route_table_id         = "${aws_route_table.pushaas-rt.id}"
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = "${aws_internet_gateway.pushaas-gw.id}"
 }
@@ -205,11 +235,34 @@ resource "aws_security_group" "pushaas-app-sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+  }
+
+  // thanks https://blog.jwr.io/terraform/icmp/ping/security/groups/2018/02/02/terraform-icmp-rules.html
+  ingress {
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+    from_port = -1
+    to_port = -1
+    protocol = "icmp"
+  }
+
   egress {
     protocol    = "-1"
     from_port   = 0
     to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags {
+    Name = "pushaas"
   }
 }
 
@@ -221,5 +274,5 @@ output "vpc" {
 }
 
 output "subnet" {
-  value = "${aws_subnet.pushaas-private-subnet.id}"
+  value = "${aws_subnet.pushaas-subnet.id}"
 }

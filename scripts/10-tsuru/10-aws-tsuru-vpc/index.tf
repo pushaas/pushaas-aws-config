@@ -28,6 +28,15 @@ resource "aws_default_security_group" "tsuru-default" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+    from_port = -1
+    to_port = -1
+    protocol = "icmp"
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -42,7 +51,7 @@ resource "aws_default_security_group" "tsuru-default" {
 resource "aws_vpc" "tsuru-vpc" {
   cidr_block = "10.0.0.0/16"
 
-  tags = {
+  tags {
     Name = "tsuru"
   }
 }
@@ -52,7 +61,7 @@ resource "aws_subnet" "tsuru-subnet" {
   cidr_block = "${cidrsubnet(aws_vpc.tsuru-vpc.cidr_block, 8, 0)}"
   availability_zone = "${var.aws_az}"
 
-  tags = {
+  tags {
     Name = "tsuru"
   }
 }
@@ -61,7 +70,7 @@ resource "aws_internet_gateway" "tsuru-gw" {
   vpc_id = "${aws_vpc.tsuru-vpc.id}"
 
   tags {
-    Name = "VPC IGW"
+    Name = "tsuru"
   }
 }
 
@@ -74,7 +83,7 @@ resource "aws_route_table" "tsuru-web-public-rt" {
   }
 
   tags {
-    Name = "Public Subnet RT"
+    Name = "tsuru"
   }
 }
 
@@ -83,6 +92,9 @@ resource "aws_route_table_association" "tsuru-web-public-rt" {
   route_table_id = "${aws_route_table.tsuru-web-public-rt.id}"
 }
 
+###################
+# output
+###################
 output "vpc" {
   value = "${aws_vpc.tsuru-vpc.id}"
 }

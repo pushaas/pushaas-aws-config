@@ -21,7 +21,7 @@ plan-undo: info
 
 do:
 	terraform apply -auto-approve
-	sleep 10
+	sleep 30
 
 undo:
 	terraform destroy -auto-approve
