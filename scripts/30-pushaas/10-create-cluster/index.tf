@@ -1,53 +1,39 @@
 ########################################
+# variables
+########################################
+variable "aws_region" {}
+variable "aws_az" {}
+variable "aws_profile" {}
+variable "aws_credentials_file" {}
+
+variable "pushaas_app_image" {}
+variable "pushaas_app_port" {}
+variable "pushaas_app_count" {}
+variable "pushaas_app_fargate_cpu" {}
+variable "pushaas_app_fargate_memory" {}
+
+variable "vpc_id" {}
+variable "subnet_id" {}
+
+########################################
 # provider
 ########################################
 provider "aws" {
-  version = "~> 2.3"
-  shared_credentials_file = "$HOME/.aws/credentials"
-  profile                 = "default"
+  version = "~> 2.7"
+  profile                 = "${var.aws_profile}"
   region                  = "${var.aws_region}"
+  shared_credentials_file = "${var.aws_credentials_file}"
 }
 
 ########################################
-# variables
+# network
 ########################################
-variable "aws_region" {
-  description = "The AWS region things are created in"
-  default     = "us-east-1"
+data "aws_vpc" "tsuru-vpc" {
+  id = "${var.vpc_id}"
 }
 
-variable "aws_az" {
-  description = "The AWS AZ things are created in"
-  default     = "us-east-1a"
-}
-
-variable "app_image" {
-  description = "Docker image to run in the ECS cluster"
-  default     = "nginx:latest"
-}
-
-variable "app_port" {
-  description = "Port exposed by the docker image to redirect traffic to"
-  default     = 80
-}
-
-variable "app_count" {
-  description = "Number of docker containers to run"
-  default     = 1
-}
-
-variable "fargate_cpu" {
-  description = "Fargate instance CPU units to provision (1 vCPU = 1024 CPU units)"
-  default     = "256"
-}
-
-variable "fargate_memory" {
-  description = "Fargate instance memory to provision (in MiB)"
-  default     = "512"
-}
-
-variable "health_check_path" {
-  default = "/"
+data "aws_subnet" "tsuru-subnet" {
+  id = "${var.subnet_id}"
 }
 
 ########################################
@@ -62,15 +48,15 @@ resource "aws_ecs_task_definition" "pushaas-app" {
   execution_role_arn       = "${data.aws_iam_role.task_execution_role.arn}"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "${var.fargate_cpu}"
-  memory                   = "${var.fargate_memory}"
+  cpu                      = "${var.pushaas_app_fargate_cpu}"
+  memory                   = "${var.pushaas_app_fargate_memory}"
 
   container_definitions = <<DEFINITION
 [
   {
-    "cpu": ${var.fargate_cpu},
-    "image": "${var.app_image}",
-    "memoryReservation": ${var.fargate_memory},
+    "cpu": ${var.pushaas_app_fargate_cpu},
+    "image": "${var.pushaas_app_image}",
+    "memoryReservation": ${var.pushaas_app_fargate_memory},
     "name": "pushaas-app",
     "networkMode": "awsvpc",
     "entryPoint": [],
@@ -86,8 +72,8 @@ resource "aws_ecs_task_definition" "pushaas-app" {
     },
     "portMappings": [
       {
-        "containerPort": ${var.app_port},
-        "hostPort": ${var.app_port}
+        "containerPort": ${var.pushaas_app_port},
+        "hostPort": ${var.pushaas_app_port}
       }
     ]
   }
@@ -99,12 +85,12 @@ resource "aws_ecs_service" "pushaas-app" {
   name            = "pushaas-app-service"
   cluster         = "${aws_ecs_cluster.pushaas-cluster.id}"
   task_definition = "${aws_ecs_task_definition.pushaas-app.arn}"
-  desired_count   = "${var.app_count}"
+  desired_count   = "${var.pushaas_app_count}"
   launch_type     = "FARGATE"
 
   network_configuration {
     security_groups  = ["${aws_security_group.pushaas-app-sg.id}"]
-    subnets          = ["${aws_subnet.pushaas-subnet.id}"]
+    subnets          = ["${data.aws_subnet.tsuru-subnet.id}"]
     assign_public_ip = true
   }
 }
@@ -125,63 +111,6 @@ resource "aws_cloudwatch_log_group" "pushaas-log-group" {
 resource "aws_cloudwatch_log_stream" "pushaas-log-stream" {
   name           = "pushaas-log-stream"
   log_group_name = "${aws_cloudwatch_log_group.pushaas-log-group.name}"
-}
-
-########################################
-# network
-########################################
-resource "aws_vpc" "pushaas-vpc" {
-  cidr_block = "172.16.0.0/16"
-  enable_dns_hostnames = true
-  enable_dns_support = true
-
-  tags {
-    Name = "pushaas"
-  }
-}
-
-resource "aws_subnet" "pushaas-subnet" {
-  vpc_id                  = "${aws_vpc.pushaas-vpc.id}"
-  cidr_block              = "${cidrsubnet(aws_vpc.pushaas-vpc.cidr_block, 8, 0)}"
-  availability_zone       = "${var.aws_az}"
-  # map_public_ip_on_launch = true
-
-  tags {
-    Name = "pushaas"
-  }
-}
-
-# IGW for the public subnet
-resource "aws_internet_gateway" "pushaas-gw" {
-  vpc_id = "${aws_vpc.pushaas-vpc.id}"
-
-  tags {
-    Name = "pushaas"
-  }
-}
-
-resource "aws_route_table" "pushaas-rt" {
-  vpc_id = "${aws_vpc.pushaas-vpc.id}"
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.pushaas-gw.id}"
-  }
-
-  tags {
-    Name = "pushaas"
-  }
-}
-
-resource "aws_route_table_association" "pushaas-rt" {
-  subnet_id = "${aws_subnet.pushaas-subnet.id}"
-  route_table_id = "${aws_route_table.pushaas-rt.id}"
-}
-
-resource "aws_route" "pushaas-internet-access" {
-  route_table_id         = "${aws_route_table.pushaas-rt.id}"
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = "${aws_internet_gateway.pushaas-gw.id}"
 }
 
 ########################################
@@ -226,12 +155,12 @@ resource "aws_iam_role_policy_attachment" "task-execution-attach" {
 resource "aws_security_group" "pushaas-app-sg" {
   name        = "pushaas-app-security-group"
   description = "controls access to the pushaas app"
-  vpc_id      = "${aws_vpc.pushaas-vpc.id}"
+  vpc_id      = "${data.aws_vpc.tsuru-vpc.id}"
 
   ingress {
     protocol    = "tcp"
-    from_port   = "${var.app_port}"
-    to_port     = "${var.app_port}"
+    from_port   = "${var.pushaas_app_port}"
+    to_port     = "${var.pushaas_app_port}"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -269,10 +198,11 @@ resource "aws_security_group" "pushaas-app-sg" {
 ########################################
 # outputs
 ########################################
-output "vpc" {
-  value = "${aws_vpc.pushaas-vpc.id}"
-}
-
-output "subnet" {
-  value = "${aws_subnet.pushaas-subnet.id}"
-}
+# output "vpc" {
+#   # value = "${aws_vpc.pushaas-vpc.id}"
+#   value = "${data.aws_vpc.tsuru-vpc.id}"
+# }
+#
+# output "subnet" {
+#   value = "${aws_subnet.pushaas-subnet.id}"
+# }

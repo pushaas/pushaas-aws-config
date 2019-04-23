@@ -7,10 +7,10 @@
 	undo
 
 info:
-	@echo "Create PushaaS cluster on AWS"
+	@echo "Just wait"
 
 setup:
-	terraform init
+	@echo "noop"
 
 ###################
 # main
@@ -20,7 +20,7 @@ plan-do: info
 plan-undo: info
 
 do:
-	terraform apply -auto-approve
+	sleep 30
 
 undo:
-	terraform destroy -auto-approve
+	@echo "noop"
