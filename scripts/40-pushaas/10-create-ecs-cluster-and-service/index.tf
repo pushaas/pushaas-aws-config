@@ -11,6 +11,12 @@ variable "pushaas_app_count" {}
 variable "pushaas_app_fargate_cpu" {}
 variable "pushaas_app_fargate_memory" {}
 
+variable "pushaas_mongo_image" {}
+variable "pushaas_mongo_port" {}
+variable "pushaas_mongo_count" {}
+variable "pushaas_mongo_fargate_cpu" {}
+variable "pushaas_mongo_fargate_memory" {}
+
 variable "vpc_id" {}
 variable "subnet_id" {}
 variable "namespace_id" {}
@@ -34,26 +40,6 @@ data "aws_vpc" "tsuru-vpc" {
 
 data "aws_subnet" "tsuru-subnet" {
   id = "${var.subnet_id}"
-}
-
-########################################
-# dns
-########################################
-resource "aws_service_discovery_service" "pushaas-app-service" {
-  name = "pushaas"
-
-  dns_config {
-    namespace_id = "${var.namespace_id}"
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
 }
 
 ########################################
@@ -116,7 +102,99 @@ resource "aws_ecs_service" "pushaas-app" {
 
   service_registries {
     registry_arn = "${aws_service_discovery_service.pushaas-app-service.arn}"
-    # container_port = "${var.pushaas_app_port}"
+  }
+}
+
+resource "aws_ecs_task_definition" "pushaas-mongo" {
+  family                   = "pushaas-mongo-task"
+  execution_role_arn       = "${data.aws_iam_role.task_execution_role.arn}"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "${var.pushaas_mongo_fargate_cpu}"
+  memory                   = "${var.pushaas_mongo_fargate_memory}"
+
+  container_definitions = <<DEFINITION
+[
+  {
+    "cpu": ${var.pushaas_mongo_fargate_cpu},
+    "image": "${var.pushaas_mongo_image}",
+    "memoryReservation": ${var.pushaas_mongo_fargate_memory},
+    "name": "pushaas-mongo",
+    "networkMode": "awsvpc",
+    "entryPoint": [],
+    "command": [],
+    "links": [],
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/pushaas",
+          "awslogs-region": "${var.aws_region}",
+          "awslogs-stream-prefix": "ecs"
+        }
+    },
+    "portMappings": [
+      {
+        "containerPort": ${var.pushaas_mongo_port},
+        "hostPort": ${var.pushaas_mongo_port}
+      }
+    ]
+  }
+]
+DEFINITION
+}
+
+resource "aws_ecs_service" "pushaas-mongo" {
+  name            = "pushaas-mongo-service"
+  cluster         = "${aws_ecs_cluster.pushaas-cluster.id}"
+  task_definition = "${aws_ecs_task_definition.pushaas-mongo.arn}"
+  desired_count   = "${var.pushaas_mongo_count}"
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    security_groups  = ["${aws_security_group.pushaas-app-sg.id}"]
+    subnets          = ["${data.aws_subnet.tsuru-subnet.id}"]
+    assign_public_ip = true
+  }
+
+  service_registries {
+    registry_arn = "${aws_service_discovery_service.pushaas-mongo-service.arn}"
+  }
+}
+
+########################################
+# dns
+########################################
+resource "aws_service_discovery_service" "pushaas-app-service" {
+  name = "pushaas"
+
+  dns_config {
+    namespace_id = "${var.namespace_id}"
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+}
+
+resource "aws_service_discovery_service" "pushaas-mongo-service" {
+  name = "pushaas-mongo"
+
+  dns_config {
+    namespace_id = "${var.namespace_id}"
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
   }
 }
 
@@ -183,36 +261,40 @@ resource "aws_security_group" "pushaas-app-sg" {
   vpc_id      = "${data.aws_vpc.tsuru-vpc.id}"
 
   ingress {
-    protocol    = "tcp"
-    from_port   = "${var.pushaas_app_port}"
-    to_port     = "${var.pushaas_app_port}"
+    # TODO remove access from anywhere
     cidr_blocks = ["0.0.0.0/0"]
+    from_port   = "${var.pushaas_app_port}"
+    protocol    = "tcp"
+    to_port     = "${var.pushaas_app_port}"
   }
 
   ingress {
-    cidr_blocks = [
-      "0.0.0.0/0"
-    ]
+    from_port = 0
+    protocol  = "tcp"
+    self      = true
+    to_port   = 65535
+  }
+
+  ingress {
+    cidr_blocks = ["0.0.0.0/0"]
     from_port = 22
-    to_port = 22
     protocol = "tcp"
+    to_port = 22
   }
 
   // thanks https://blog.jwr.io/terraform/icmp/ping/security/groups/2018/02/02/terraform-icmp-rules.html
   ingress {
-    cidr_blocks = [
-      "0.0.0.0/0"
-    ]
+    cidr_blocks = ["0.0.0.0/0"]
     from_port = -1
-    to_port = -1
     protocol = "icmp"
+    to_port = -1
   }
 
   egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 0
+    protocol    = "-1"
+    to_port     = 0
   }
 
   tags {
