@@ -10,7 +10,7 @@ VPC := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.modu
 SUBNET := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.modules[0].outputs.subnet.value')
 
 info:
-	@echo "Create PushaaS cluster on AWS"
+	@echo "Creates hosted zone"
 
 setup:
 	terraform init
@@ -31,4 +31,7 @@ do:
 
 undo:
 	terraform destroy \
-		-auto-approve
+		-auto-approve \
+		-var-file="../../common.tfvars" \
+		-var "vpc_id=$(VPC)" \
+		-var "subnet_id=$(SUBNET)"

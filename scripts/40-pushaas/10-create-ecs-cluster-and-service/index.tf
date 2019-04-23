@@ -2,7 +2,6 @@
 # variables
 ########################################
 variable "aws_region" {}
-variable "aws_az" {}
 variable "aws_profile" {}
 variable "aws_credentials_file" {}
 
@@ -14,6 +13,7 @@ variable "pushaas_app_fargate_memory" {}
 
 variable "vpc_id" {}
 variable "subnet_id" {}
+variable "namespace_id" {}
 
 ########################################
 # provider
@@ -34,6 +34,26 @@ data "aws_vpc" "tsuru-vpc" {
 
 data "aws_subnet" "tsuru-subnet" {
   id = "${var.subnet_id}"
+}
+
+########################################
+# dns
+########################################
+resource "aws_service_discovery_service" "pushaas-app-service" {
+  name = "pushaas"
+
+  dns_config {
+    namespace_id = "${var.namespace_id}"
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
 }
 
 ########################################
@@ -92,6 +112,11 @@ resource "aws_ecs_service" "pushaas-app" {
     security_groups  = ["${aws_security_group.pushaas-app-sg.id}"]
     subnets          = ["${data.aws_subnet.tsuru-subnet.id}"]
     assign_public_ip = true
+  }
+
+  service_registries {
+    registry_arn = "${aws_service_discovery_service.pushaas-app-service.arn}"
+    # container_port = "${var.pushaas_app_port}"
   }
 }
 

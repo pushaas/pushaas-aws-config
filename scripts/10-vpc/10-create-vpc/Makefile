@@ -20,7 +20,11 @@ plan-do: info
 plan-undo: info
 
 do:
-	terraform apply -auto-approve -var-file="../../common.tfvars"
+	terraform apply \
+		-auto-approve \
+		-var-file="../../common.tfvars"
 
 undo:
-	terraform destroy -auto-approve
+	terraform destroy \
+		-auto-approve \
+		-var-file="../../common.tfvars"
