@@ -301,15 +301,3 @@ resource "aws_security_group" "pushaas-app-sg" {
     Name = "pushaas"
   }
 }
-
-########################################
-# outputs
-########################################
-# output "vpc" {
-#   # value = "${aws_vpc.pushaas-vpc.id}"
-#   value = "${data.aws_vpc.tsuru-vpc.id}"
-# }
-#
-# output "subnet" {
-#   value = "${aws_subnet.pushaas-subnet.id}"
-# }
