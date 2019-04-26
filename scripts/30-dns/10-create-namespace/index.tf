@@ -1,10 +1,12 @@
 ########################################
 # variables
 ########################################
+# common - general
 variable "aws_region" {}
 variable "aws_profile" {}
 variable "aws_credentials_file" {}
 
+# specific
 variable "vpc_id" {}
 variable "subnet_id" {}
 

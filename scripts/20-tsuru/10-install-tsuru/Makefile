@@ -16,7 +16,7 @@ info:
 	@echo "Create a Tsuru installation on AWS"
 
 setup:
-	@echo "done!"
+	@echo "noop"
 
 config:
 	@cp template-install-config.yml install-config.yml

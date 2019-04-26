@@ -10,8 +10,11 @@ VPC := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.modu
 SUBNET := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.modules[0].outputs.subnet.value')
 NAMESPACE := $(shell cat "../../30-dns/10-create-namespace/terraform.tfstate" | jq -r '.modules[0].outputs.namespace.value')
 
+PUSHAAS_BASIC_AUTH_USER := $(shell cat ../20-create-tsuru-service/manifest.yaml | grep "username" | cut -d' ' -f2-)
+PUSHAAS_BASIC_AUTH_PASSWORD := $(shell cat ../20-create-tsuru-service/manifest.yaml | grep "password" | cut -d' ' -f2-)
+
 info:
-	@echo "Create PushaaS cluster on AWS"
+	@echo "Create PushaaS cluster on ECS and register tasks definitions"
 
 setup:
 	terraform init
@@ -29,7 +32,9 @@ do:
 		-var-file="../../common.tfvars" \
 		-var "vpc_id=$(VPC)" \
 		-var "subnet_id=$(SUBNET)" \
-		-var "namespace_id=$(NAMESPACE)"
+		-var "namespace_id=$(NAMESPACE)" \
+		-var "basic_auth_user=$(PUSHAAS_BASIC_AUTH_USER)" \
+		-var "basic_auth_password=$(PUSHAAS_BASIC_AUTH_PASSWORD)"
 
 undo:
 	terraform destroy \
@@ -37,4 +42,6 @@ undo:
 		-var-file="../../common.tfvars" \
 		-var "vpc_id=$(VPC)" \
 		-var "subnet_id=$(SUBNET)" \
-		-var "namespace_id=$(NAMESPACE)"
+		-var "namespace_id=$(NAMESPACE)" \
+		-var "basic_auth_user=$(PUSHAAS_BASIC_AUTH_USER)" \
+		-var "basic_auth_password=$(PUSHAAS_BASIC_AUTH_PASSWORD)"

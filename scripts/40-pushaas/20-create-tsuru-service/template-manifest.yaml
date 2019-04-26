@@ -1,0 +1,6 @@
+id: pushaas
+username: tsuru
+password: VAR_PASSWORD
+team: pushaas-team
+endpoint:
+  production: pushaas.tsuru

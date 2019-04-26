@@ -1,6 +1,7 @@
 ########################################
 # variables
 ########################################
+# common - general
 variable "aws_region" {}
 variable "aws_az" {}
 variable "aws_profile" {}
@@ -114,7 +115,7 @@ resource "aws_route" "tsuru-internet-access" {
 }
 
 ########################################
-# output
+# outputs
 ########################################
 output "vpc" {
   value = "${aws_vpc.tsuru-vpc.id}"
