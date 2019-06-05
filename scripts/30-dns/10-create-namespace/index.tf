@@ -3,6 +3,7 @@
 ########################################
 # common - general
 variable "aws_region" {}
+variable "aws_az" {} # unused
 variable "aws_profile" {}
 variable "aws_credentials_file" {}
 

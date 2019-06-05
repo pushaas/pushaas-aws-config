@@ -52,7 +52,7 @@ resource "aws_default_security_group" "tsuru-default" {
     to_port     = 0
   }
 
-  tags {
+  tags = {
     Name = "tsuru"
   }
 }
@@ -65,7 +65,7 @@ resource "aws_vpc" "tsuru-vpc" {
   enable_dns_hostnames = true
   enable_dns_support = true
 
-  tags {
+  tags = {
     Name = "tsuru"
   }
 }
@@ -77,7 +77,7 @@ resource "aws_subnet" "tsuru-subnet" {
   # TODO remove public ip
   map_public_ip_on_launch = true
 
-  tags {
+  tags = {
     Name = "tsuru"
   }
 }
@@ -85,7 +85,7 @@ resource "aws_subnet" "tsuru-subnet" {
 resource "aws_internet_gateway" "tsuru-gw" {
   vpc_id = "${aws_vpc.tsuru-vpc.id}"
 
-  tags {
+  tags = {
     Name = "tsuru"
   }
 }
@@ -98,7 +98,7 @@ resource "aws_route_table" "tsuru-rt" {
     gateway_id = "${aws_internet_gateway.tsuru-gw.id}"
   }
 
-  tags {
+  tags = {
     Name = "tsuru"
   }
 }

@@ -8,6 +8,9 @@
 info:
 	@echo "Setup infrastructure for the PushaaS project"
 
+setup:
+	@./index.sh "setup"
+
 ###################
 # main
 ###################

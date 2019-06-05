@@ -22,9 +22,9 @@ plan-undo: info
 do:
 	terraform apply \
 		-auto-approve \
-		-var-file="../../common.tfvars"
+		-var-file="../../variables/aws.tfvars"
 
 undo:
 	terraform destroy \
 		-auto-approve \
-		-var-file="../../common.tfvars"
+		-var-file="../../variables/aws.tfvars"

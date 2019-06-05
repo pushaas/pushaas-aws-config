@@ -6,12 +6,12 @@
 	setup \
 	undo
 
-SUBNET := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.modules[0].outputs.subnet.value')
+SUBNET := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.outputs.subnet.value')
 
-CLUSTER_ID := $(shell cat "../30-create-cluster/terraform.tfstate" | jq -r '.modules[0].outputs.cluster_id.value')
-SG_PUSHAAS_ID := $(shell cat "../30-create-cluster/terraform.tfstate" | jq -r '.modules[0].outputs.sg_pushaas_id.value')
-TASK_PUSHAAS_MONGO_ARN := $(shell cat "../30-create-cluster/terraform.tfstate" | jq -r '.modules[0].outputs.task_pushaas_mongo_arn.value')
-SERVICE_PUSHAAS_MONGO_ARN := $(shell cat "../30-create-cluster/terraform.tfstate" | jq -r '.modules[0].outputs.service_pushaas_mongo_arn.value')
+CLUSTER_ID := $(shell cat "../30-create-cluster/terraform.tfstate" | jq -r '.outputs.cluster_id.value')
+SG_PUSHAAS_ID := $(shell cat "../30-create-cluster/terraform.tfstate" | jq -r '.outputs.sg_pushaas_id.value')
+TASK_PUSHAAS_MONGO_ARN := $(shell cat "../30-create-cluster/terraform.tfstate" | jq -r '.outputs.task_pushaas_mongo_arn.value')
+SERVICE_PUSHAAS_MONGO_ARN := $(shell cat "../30-create-cluster/terraform.tfstate" | jq -r '.outputs.service_pushaas_mongo_arn.value')
 
 info:
 	@echo "Create PushaaS Mongodb service on ECS"
@@ -29,7 +29,8 @@ plan-undo: info
 do:
 	terraform apply \
 		-auto-approve \
-		-var-file="../../common.tfvars" \
+		-var-file="../../variables/aws.tfvars" \
+		-var-file="../../variables/pushaas_mongo.tfvars" \
 		-var "cluster_id=$(CLUSTER_ID)" \
 		-var "sg_pushaas_id=$(SG_PUSHAAS_ID)" \
 		-var "task_pushaas_mongo_arn=$(TASK_PUSHAAS_MONGO_ARN)" \
@@ -39,7 +40,8 @@ do:
 undo:
 	terraform destroy \
 		-auto-approve \
-		-var-file="../../common.tfvars" \
+		-var-file="../../variables/aws.tfvars" \
+		-var-file="../../variables/pushaas_mongo.tfvars" \
 		-var "cluster_id=$(CLUSTER_ID)" \
 		-var "sg_pushaas_id=$(SG_PUSHAAS_ID)" \
 		-var "task_pushaas_mongo_arn=$(TASK_PUSHAAS_MONGO_ARN)" \

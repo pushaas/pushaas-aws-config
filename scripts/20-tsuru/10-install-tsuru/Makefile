@@ -7,8 +7,8 @@
 	setup \
 	undo
 
-VPC := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.modules[0].outputs.vpc.value')
-SUBNET := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.modules[0].outputs.subnet.value')
+VPC := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.outputs.vpc.value')
+SUBNET := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.outputs.subnet.value')
 ACCESS_KEY := $(shell cat ../../aws_credentials | grep aws_access_key_id | cut -d " " -f 3)
 SECRET_KEY := $(shell cat ../../aws_credentials | grep aws_secret_access_key | cut -d " " -f 3)
 
@@ -34,10 +34,7 @@ plan-do: info
 plan-undo: info
 
 do: config
-	tsuru \
-		-c install-config.yml \
-		-v 2 \
-		install-create
+	tsuru install-create -c install-config.yml
 
 undo: config
 	tsuru install-remove -y -c install-config.yml

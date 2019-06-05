@@ -3,11 +3,16 @@
 ########################################
 # common - general
 variable "aws_region" {}
+variable "aws_az" {} # unused
 variable "aws_profile" {}
 variable "aws_credentials_file" {}
 
 # common - pushaas
 variable "pushaas_mongo_count" {}
+variable "pushaas_mongo_image" {} # unused
+variable "pushaas_mongo_port" {} # unused
+variable "pushaas_mongo_fargate_cpu" {} # unused
+variable "pushaas_mongo_fargate_memory" {} # unused
 
 # specific
 variable "subnet_id" {}

@@ -3,14 +3,18 @@
 ########################################
 # common - general
 variable "aws_region" {}
+variable "aws_az" {} # unused
 variable "aws_profile" {}
 variable "aws_credentials_file" {}
 
 # common - pushaas
+variable "pushaas_app_count" {} # unused
 variable "pushaas_app_image" {}
 variable "pushaas_app_port" {}
 variable "pushaas_app_fargate_cpu" {}
 variable "pushaas_app_fargate_memory" {}
+
+variable "pushaas_mongo_count" {} # unused
 variable "pushaas_mongo_image" {}
 variable "pushaas_mongo_port" {}
 variable "pushaas_mongo_fargate_cpu" {}
@@ -176,7 +180,7 @@ resource "aws_cloudwatch_log_group" "pushaas-log-group" {
   name              = "/ecs/pushaas"
   retention_in_days = 30
 
-  tags {
+  tags = {
     Name = "pushaas"
   }
 }
@@ -267,7 +271,7 @@ resource "aws_security_group" "pushaas-app-sg" {
     to_port     = 0
   }
 
-  tags {
+  tags = {
     Name = "pushaas"
   }
 }
