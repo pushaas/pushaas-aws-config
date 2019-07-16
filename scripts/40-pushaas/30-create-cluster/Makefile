@@ -31,7 +31,7 @@ do:
 		-auto-approve \
 		-var-file="../../variables/aws.tfvars" \
 		-var-file="../../variables/pushaas_app.tfvars" \
-		-var-file="../../variables/pushaas_mongo.tfvars" \
+		-var-file="../../variables/pushaas_redis.tfvars" \
 		-var "vpc_id=$(VPC)" \
 		-var "subnet_id=$(SUBNET)" \
 		-var "namespace_id=$(NAMESPACE)" \
@@ -43,7 +43,7 @@ undo:
 		-auto-approve \
 		-var-file="../../variables/aws.tfvars" \
 		-var-file="../../variables/pushaas_app.tfvars" \
-		-var-file="../../variables/pushaas_mongo.tfvars" \
+		-var-file="../../variables/pushaas_redis.tfvars" \
 		-var "vpc_id=$(VPC)" \
 		-var "subnet_id=$(SUBNET)" \
 		-var "namespace_id=$(NAMESPACE)" \

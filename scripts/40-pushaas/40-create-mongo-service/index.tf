@@ -8,18 +8,18 @@ variable "aws_profile" {}
 variable "aws_credentials_file" {}
 
 # common - pushaas
-variable "pushaas_mongo_count" {}
-variable "pushaas_mongo_image" {} # unused
-variable "pushaas_mongo_port" {} # unused
-variable "pushaas_mongo_fargate_cpu" {} # unused
-variable "pushaas_mongo_fargate_memory" {} # unused
+variable "pushaas_redis_count" {}
+variable "pushaas_redis_image" {} # unused
+variable "pushaas_redis_port" {} # unused
+variable "pushaas_redis_fargate_cpu" {} # unused
+variable "pushaas_redis_fargate_memory" {} # unused
 
 # specific
 variable "subnet_id" {}
 variable "cluster_id" {}
 variable "sg_pushaas_id" {}
-variable "task_pushaas_mongo_arn" {}
-variable "service_pushaas_mongo_arn" {}
+variable "task_pushaas_redis_arn" {}
+variable "service_pushaas_redis_arn" {}
 
 ########################################
 # provider
@@ -34,11 +34,11 @@ provider "aws" {
 ########################################
 # ecs
 ########################################
-resource "aws_ecs_service" "pushaas-mongo" {
-  name            = "pushaas-mongo-service"
+resource "aws_ecs_service" "pushaas-redis" {
+  name            = "pushaas-redis-service"
   cluster         = "${var.cluster_id}"
-  task_definition = "${var.task_pushaas_mongo_arn}"
-  desired_count   = "${var.pushaas_mongo_count}"
+  task_definition = "${var.task_pushaas_redis_arn}"
+  desired_count   = "${var.pushaas_redis_count}"
   launch_type     = "FARGATE"
 
   network_configuration {
@@ -48,6 +48,6 @@ resource "aws_ecs_service" "pushaas-mongo" {
   }
 
   service_registries {
-    registry_arn = "${var.service_pushaas_mongo_arn}"
+    registry_arn = "${var.service_pushaas_redis_arn}"
   }
 }

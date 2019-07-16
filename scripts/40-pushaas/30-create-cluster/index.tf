@@ -14,11 +14,11 @@ variable "pushaas_app_port" {}
 variable "pushaas_app_fargate_cpu" {}
 variable "pushaas_app_fargate_memory" {}
 
-variable "pushaas_mongo_count" {} # unused
-variable "pushaas_mongo_image" {}
-variable "pushaas_mongo_port" {}
-variable "pushaas_mongo_fargate_cpu" {}
-variable "pushaas_mongo_fargate_memory" {}
+variable "pushaas_redis_count" {} # unused
+variable "pushaas_redis_image" {}
+variable "pushaas_redis_port" {}
+variable "pushaas_redis_fargate_cpu" {}
+variable "pushaas_redis_fargate_memory" {}
 
 # specific
 variable "vpc_id" {}
@@ -97,21 +97,21 @@ resource "aws_ecs_task_definition" "pushaas-app" {
 DEFINITION
 }
 
-resource "aws_ecs_task_definition" "pushaas-mongo" {
-  family                   = "pushaas-mongo-task"
+resource "aws_ecs_task_definition" "pushaas-redis" {
+  family                   = "pushaas-redis-task"
   execution_role_arn       = "${data.aws_iam_role.task_execution_role.arn}"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "${var.pushaas_mongo_fargate_cpu}"
-  memory                   = "${var.pushaas_mongo_fargate_memory}"
+  cpu                      = "${var.pushaas_redis_fargate_cpu}"
+  memory                   = "${var.pushaas_redis_fargate_memory}"
 
   container_definitions = <<DEFINITION
 [
   {
-    "cpu": ${var.pushaas_mongo_fargate_cpu},
-    "image": "${var.pushaas_mongo_image}",
-    "memoryReservation": ${var.pushaas_mongo_fargate_memory},
-    "name": "pushaas-mongo",
+    "cpu": ${var.pushaas_redis_fargate_cpu},
+    "image": "${var.pushaas_redis_image}",
+    "memoryReservation": ${var.pushaas_redis_fargate_memory},
+    "name": "pushaas-redis",
     "networkMode": "awsvpc",
     "entryPoint": [],
     "command": [],
@@ -126,8 +126,8 @@ resource "aws_ecs_task_definition" "pushaas-mongo" {
     },
     "portMappings": [
       {
-        "containerPort": ${var.pushaas_mongo_port},
-        "hostPort": ${var.pushaas_mongo_port}
+        "containerPort": ${var.pushaas_redis_port},
+        "hostPort": ${var.pushaas_redis_port}
       }
     ]
   }
@@ -155,8 +155,8 @@ resource "aws_service_discovery_service" "pushaas-app-service" {
   }
 }
 
-resource "aws_service_discovery_service" "pushaas-mongo-service" {
-  name = "pushaas-mongo"
+resource "aws_service_discovery_service" "pushaas-redis-service" {
+  name = "pushaas-redis"
 
   dns_config {
     namespace_id = "${var.namespace_id}"
@@ -291,14 +291,14 @@ output "task_pushaas_app_arn" {
   value = "${aws_ecs_task_definition.pushaas-app.arn}"
 }
 
-output "task_pushaas_mongo_arn" {
-  value = "${aws_ecs_task_definition.pushaas-mongo.arn}"
+output "task_pushaas_redis_arn" {
+  value = "${aws_ecs_task_definition.pushaas-redis.arn}"
 }
 
 output "service_pushaas_app_arn" {
   value = "${aws_service_discovery_service.pushaas-app-service.arn}"
 }
 
-output "service_pushaas_mongo_arn" {
-  value = "${aws_service_discovery_service.pushaas-mongo-service.arn}"
+output "service_pushaas_redis_arn" {
+  value = "${aws_service_discovery_service.pushaas-redis-service.arn}"
 }
