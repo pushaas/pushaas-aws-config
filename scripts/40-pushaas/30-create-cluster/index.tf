@@ -55,6 +55,7 @@ resource "aws_ecs_cluster" "pushaas-cluster" {
   name = "pushaas-cluster"
 }
 
+# TODO maybe move the task definition to the service creation step?
 resource "aws_ecs_task_definition" "pushaas-app" {
   family                   = "pushaas-app-task"
   execution_role_arn       = "${data.aws_iam_role.task_execution_role.arn}"
@@ -97,6 +98,7 @@ resource "aws_ecs_task_definition" "pushaas-app" {
 DEFINITION
 }
 
+# TODO maybe move the task definition to the service creation step?
 resource "aws_ecs_task_definition" "pushaas-redis" {
   family                   = "pushaas-redis-task"
   execution_role_arn       = "${data.aws_iam_role.task_execution_role.arn}"
