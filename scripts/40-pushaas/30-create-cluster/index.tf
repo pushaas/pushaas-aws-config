@@ -91,7 +91,8 @@ resource "aws_ecs_task_definition" "pushaas-app" {
     ],
     "environment" : [
       { "name" : "PUSHAAS_API__BASIC_AUTH_USER", "value" : "${var.basic_auth_user}" },
-      { "name" : "PUSHAAS_API__BASIC_AUTH_PASSWORD", "value" : "${var.basic_auth_password}" }
+      { "name" : "PUSHAAS_API__BASIC_AUTH_PASSWORD", "value" : "${var.basic_auth_password}" },
+      { "name" : "PUSHAAS_ENV", "value" : "prod" }
     ]
   }
 ]
