@@ -7,25 +7,9 @@ variable "aws_az" {} # unused
 variable "aws_profile" {}
 variable "aws_credentials_file" {}
 
-# common - pushaas
-variable "pushaas_app_count" {} # unused
-variable "pushaas_app_image" {}
-variable "pushaas_app_port" {}
-variable "pushaas_app_fargate_cpu" {}
-variable "pushaas_app_fargate_memory" {}
-
-variable "pushaas_redis_count" {} # unused
-variable "pushaas_redis_image" {}
-variable "pushaas_redis_port" {}
-variable "pushaas_redis_fargate_cpu" {}
-variable "pushaas_redis_fargate_memory" {}
-
 # specific
 variable "vpc_id" {}
 variable "subnet_id" {}
-variable "namespace_id" {}
-variable "basic_auth_user" {}
-variable "basic_auth_password" {}
 
 ########################################
 # provider
@@ -53,126 +37,6 @@ data "aws_subnet" "tsuru-subnet" {
 ########################################
 resource "aws_ecs_cluster" "pushaas-cluster" {
   name = "pushaas-cluster"
-}
-
-# TODO maybe move the task definition to the service creation step?
-resource "aws_ecs_task_definition" "pushaas-app" {
-  family                   = "pushaas-app-task"
-  execution_role_arn       = "${data.aws_iam_role.task_execution_role.arn}"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "${var.pushaas_app_fargate_cpu}"
-  memory                   = "${var.pushaas_app_fargate_memory}"
-
-  container_definitions = <<DEFINITION
-[
-  {
-    "cpu": ${var.pushaas_app_fargate_cpu},
-    "image": "${var.pushaas_app_image}",
-    "memoryReservation": ${var.pushaas_app_fargate_memory},
-    "name": "pushaas-app",
-    "networkMode": "awsvpc",
-    "entryPoint": [],
-    "command": [],
-    "links": [],
-    "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/pushaas",
-          "awslogs-region": "${var.aws_region}",
-          "awslogs-stream-prefix": "ecs"
-        }
-    },
-    "portMappings": [
-      {
-        "containerPort": ${var.pushaas_app_port},
-        "hostPort": ${var.pushaas_app_port}
-      }
-    ],
-    "environment" : [
-      { "name" : "PUSHAAS_API__BASIC_AUTH_USER", "value" : "${var.basic_auth_user}" },
-      { "name" : "PUSHAAS_API__BASIC_AUTH_PASSWORD", "value" : "${var.basic_auth_password}" },
-      { "name" : "PUSHAAS_ENV", "value" : "prod" }
-    ]
-  }
-]
-DEFINITION
-}
-
-# TODO maybe move the task definition to the service creation step?
-resource "aws_ecs_task_definition" "pushaas-redis" {
-  family                   = "pushaas-redis-task"
-  execution_role_arn       = "${data.aws_iam_role.task_execution_role.arn}"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "${var.pushaas_redis_fargate_cpu}"
-  memory                   = "${var.pushaas_redis_fargate_memory}"
-
-  container_definitions = <<DEFINITION
-[
-  {
-    "cpu": ${var.pushaas_redis_fargate_cpu},
-    "image": "${var.pushaas_redis_image}",
-    "memoryReservation": ${var.pushaas_redis_fargate_memory},
-    "name": "pushaas-redis",
-    "networkMode": "awsvpc",
-    "entryPoint": [],
-    "command": [],
-    "links": [],
-    "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/pushaas",
-          "awslogs-region": "${var.aws_region}",
-          "awslogs-stream-prefix": "ecs"
-        }
-    },
-    "portMappings": [
-      {
-        "containerPort": ${var.pushaas_redis_port},
-        "hostPort": ${var.pushaas_redis_port}
-      }
-    ]
-  }
-]
-DEFINITION
-}
-
-########################################
-# dns
-########################################
-resource "aws_service_discovery_service" "pushaas-app-service" {
-  name = "pushaas"
-
-  dns_config {
-    namespace_id = "${var.namespace_id}"
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
-resource "aws_service_discovery_service" "pushaas-redis-service" {
-  name = "pushaas-redis"
-
-  dns_config {
-    namespace_id = "${var.namespace_id}"
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
 }
 
 ########################################
@@ -238,14 +102,6 @@ resource "aws_security_group" "pushaas-app-sg" {
   vpc_id      = "${data.aws_vpc.tsuru-vpc.id}"
 
   ingress {
-    # TODO remove access from anywhere
-    cidr_blocks = ["0.0.0.0/0"]
-    from_port   = "${var.pushaas_app_port}"
-    protocol    = "tcp"
-    to_port     = "${var.pushaas_app_port}"
-  }
-
-  ingress {
     from_port = 0
     protocol  = "tcp"
     self      = true
@@ -288,20 +144,4 @@ output "cluster_id" {
 
 output "sg_pushaas_id" {
   value = "${aws_security_group.pushaas-app-sg.id}"
-}
-
-output "task_pushaas_app_arn" {
-  value = "${aws_ecs_task_definition.pushaas-app.arn}"
-}
-
-output "task_pushaas_redis_arn" {
-  value = "${aws_ecs_task_definition.pushaas-redis.arn}"
-}
-
-output "service_pushaas_app_arn" {
-  value = "${aws_service_discovery_service.pushaas-app-service.arn}"
-}
-
-output "service_pushaas_redis_arn" {
-  value = "${aws_service_discovery_service.pushaas-redis-service.arn}"
 }
