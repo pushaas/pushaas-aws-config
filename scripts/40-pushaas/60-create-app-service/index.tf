@@ -96,6 +96,7 @@ resource "aws_ecs_service" "pushaas-app" {
   network_configuration {
     security_groups  = ["${var.sg_pushaas_id}", "${aws_security_group.pushaas-app-temp-sg.id}"]
     subnets          = ["${var.subnet_id}"]
+    # TODO remove public ip
     assign_public_ip = true
   }
 
