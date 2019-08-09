@@ -55,7 +55,7 @@ resource "aws_ecs_task_definition" "push-redis" {
     "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/push",
+          "awslogs-group": "/ecs/pushaas",
           "awslogs-region": "${var.aws_region}",
           "awslogs-stream-prefix": "ecs"
         }
