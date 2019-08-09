@@ -44,7 +44,7 @@ data "aws_iam_role" "task_execution_role" {
 # ecs
 ########################################
 resource "aws_ecs_task_definition" "pushaas-app" {
-  family                   = "pushaas-app-task"
+  family                   = "pushaas-app"
   execution_role_arn       = "${data.aws_iam_role.task_execution_role.arn}"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
