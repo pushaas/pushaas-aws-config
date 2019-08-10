@@ -135,6 +135,7 @@ data "aws_vpc" "tsuru-vpc" {
 ########################################
 # security
 ########################################
+# TODO create this on 30-create-cluster, or remove at all
 resource "aws_security_group" "pushaas-app-temp-sg" {
   name        = "pushaas-app-temp-security-group"
   description = "controls access to the pushaas app"
@@ -143,9 +144,9 @@ resource "aws_security_group" "pushaas-app-temp-sg" {
   ingress {
     # TODO remove access from anywhere
     cidr_blocks = ["0.0.0.0/0"]
-    from_port   = "${var.pushaas_app_port}"
+    from_port   = "0"
     protocol    = "tcp"
-    to_port     = "${var.pushaas_app_port}"
+    to_port     = "65535"
   }
 
   tags = {
