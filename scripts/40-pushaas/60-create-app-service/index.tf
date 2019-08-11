@@ -94,7 +94,7 @@ resource "aws_ecs_service" "pushaas-app" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    security_groups  = ["${var.sg_pushaas_id}", "${aws_security_group.pushaas-app-temp-sg.id}"]
+    security_groups  = ["${var.sg_pushaas_id}"]
     subnets          = ["${var.subnet_id}"]
     # TODO remove public ip
     assign_public_ip = true
@@ -130,26 +130,4 @@ resource "aws_service_discovery_service" "pushaas-app-service" {
 ########################################
 data "aws_vpc" "tsuru-vpc" {
   id = "${var.vpc_id}"
-}
-
-########################################
-# security
-########################################
-# TODO create this on 30-create-cluster, or remove at all
-resource "aws_security_group" "pushaas-app-temp-sg" {
-  name        = "pushaas-app-temp-security-group"
-  description = "controls access to the pushaas app"
-  vpc_id      = "${data.aws_vpc.tsuru-vpc.id}"
-
-  ingress {
-    # TODO remove access from anywhere
-    cidr_blocks = ["0.0.0.0/0"]
-    from_port   = "0"
-    protocol    = "tcp"
-    to_port     = "65535"
-  }
-
-  tags = {
-    Name = "pushaas"
-  }
 }

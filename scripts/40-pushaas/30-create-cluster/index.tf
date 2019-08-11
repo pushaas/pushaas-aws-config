@@ -123,6 +123,14 @@ resource "aws_security_group" "pushaas-app-sg" {
     to_port = -1
   }
 
+  # TODO remove access from anywhere - this is here just to ease testing until the system is mature
+  ingress {
+    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 0
+    protocol    = "tcp"
+    to_port     = 65535
+  }
+
   egress {
     cidr_blocks = ["0.0.0.0/0"]
     from_port   = 0
