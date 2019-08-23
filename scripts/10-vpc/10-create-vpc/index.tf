@@ -34,7 +34,7 @@ resource "aws_default_security_group" "tsuru-default" {
     cidr_blocks = ["0.0.0.0/0"]
     from_port = 80
     protocol  = "tcp"
-    to_port   = 80
+    to_port   = 65535
   }
 
   // thanks https://blog.jwr.io/terraform/icmp/ping/security/groups/2018/02/02/terraform-icmp-rules.html
