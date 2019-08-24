@@ -8,6 +8,9 @@ SG_PUSHAAS_ID := $(shell cat "../30-create-cluster/terraform.tfstate" | jq -r '.
 PUSHAAS_API__BASIC_AUTH_PASSWORD := $(shell cat ../20-create-tsuru-service/manifest.yaml | grep "password" | cut -d' ' -f2-)
 PUSHAAS_API__BASIC_AUTH_USER := $(shell cat ../20-create-tsuru-service/manifest.yaml | grep "username" | cut -d' ' -f2-)
 
+AWS_ACCESS_KEY := $(shell cat ../../aws_credentials | grep aws_access_key_id | cut -d " " -f 3)
+AWS_SECRET_KEY := $(shell cat ../../aws_credentials | grep aws_secret_access_key | cut -d " " -f 3)
+
 .PHONY: info
 info:
 	@echo "Create PushaaS app service on ECS"
@@ -31,6 +34,8 @@ do:
 		-auto-approve \
 		-var-file="../../variables/aws.tfvars" \
 		-var-file="../../variables/pushaas_app.tfvars" \
+		-var "aws_access_key=$(AWS_ACCESS_KEY)" \
+		-var "aws_secret_key=$(AWS_SECRET_KEY)" \
 		-var "basic_auth_password=$(PUSHAAS_API__BASIC_AUTH_PASSWORD)" \
 		-var "basic_auth_user=$(PUSHAAS_API__BASIC_AUTH_USER)" \
 		-var "cluster_id=$(CLUSTER_ID)" \
@@ -45,6 +50,8 @@ undo:
 		-auto-approve \
 		-var-file="../../variables/aws.tfvars" \
 		-var-file="../../variables/pushaas_app.tfvars" \
+		-var "aws_access_key=$(AWS_ACCESS_KEY)" \
+		-var "aws_secret_key=$(AWS_SECRET_KEY)" \
 		-var "basic_auth_password=$(PUSHAAS_API__BASIC_AUTH_PASSWORD)" \
 		-var "basic_auth_user=$(PUSHAAS_API__BASIC_AUTH_USER)" \
 		-var "cluster_id=$(CLUSTER_ID)" \

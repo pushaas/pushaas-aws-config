@@ -15,6 +15,8 @@ variable "pushaas_app_image" {}
 variable "pushaas_app_port" {}
 
 # specific
+variable "aws_access_key" {}
+variable "aws_secret_key" {}
 variable "basic_auth_password" {}
 variable "basic_auth_user" {}
 variable "cluster_id" {}
@@ -77,6 +79,10 @@ resource "aws_ecs_task_definition" "pushaas-app" {
       }
     ],
     "environment" : [
+      { "name" : "AWS_REGION", "value" : "${var.aws_region}" },
+      { "name" : "AWS_ACCESS_KEY_ID", "value" : "${var.aws_access_key}" },
+      { "name" : "AWS_SECRET_ACCESS_KEY", "value" : "${var.aws_secret_key}" },
+
       { "name" : "PUSHAAS_API__BASIC_AUTH_USER", "value" : "${var.basic_auth_user}" },
       { "name" : "PUSHAAS_API__BASIC_AUTH_PASSWORD", "value" : "${var.basic_auth_password}" },
       { "name" : "PUSHAAS_ENV", "value" : "prod" }
