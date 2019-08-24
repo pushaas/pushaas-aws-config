@@ -83,6 +83,10 @@ resource "aws_ecs_task_definition" "pushaas-app" {
       { "name" : "AWS_ACCESS_KEY_ID", "value" : "${var.aws_access_key}" },
       { "name" : "AWS_SECRET_ACCESS_KEY", "value" : "${var.aws_secret_key}" },
 
+      { "name" : "PUSHAAS_PROVISIONER__ECS__DNS_NAMESPACE", "value" : "${var.namespace_id}" },
+      { "name" : "PUSHAAS_PROVISIONER__ECS__SECURITY_GROUP", "value" : "${var.sg_pushaas_id}" },
+      { "name" : "PUSHAAS_PROVISIONER__ECS__SUBNET", "value" : "${var.subnet_id}" },
+
       { "name" : "PUSHAAS_API__BASIC_AUTH_USER", "value" : "${var.basic_auth_user}" },
       { "name" : "PUSHAAS_API__BASIC_AUTH_PASSWORD", "value" : "${var.basic_auth_password}" },
       { "name" : "PUSHAAS_ENV", "value" : "prod" }
