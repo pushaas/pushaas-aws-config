@@ -1,4 +1,4 @@
-	.PHONY: info
+.PHONY: info
 info:
 	@echo "Create Tsuru roles for users to create apps and services"
 
