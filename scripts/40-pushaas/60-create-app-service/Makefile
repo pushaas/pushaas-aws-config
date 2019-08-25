@@ -5,8 +5,8 @@ NAMESPACE := $(shell cat "../../30-dns/10-create-namespace/terraform.tfstate" | 
 CLUSTER_ID := $(shell cat "../30-create-cluster/terraform.tfstate" | jq -r '.outputs.cluster_id.value')
 SG_PUSHAAS_ID := $(shell cat "../30-create-cluster/terraform.tfstate" | jq -r '.outputs.sg_pushaas_id.value')
 
-PUSHAAS_API__BASIC_AUTH_PASSWORD := $(shell cat ../20-create-tsuru-service/manifest.yaml | grep "password" | cut -d' ' -f2-)
-PUSHAAS_API__BASIC_AUTH_USER := $(shell cat ../20-create-tsuru-service/manifest.yaml | grep "username" | cut -d' ' -f2-)
+PUSHAAS_API__BASIC_AUTH_PASSWORD := $(shell cat ../20-create-tsuru-service-credentials/credentials | grep "PASSWORD" | cut -d "=" -f 2)
+PUSHAAS_API__BASIC_AUTH_USER := $(shell cat ../20-create-tsuru-service-credentials/credentials | grep "USERNAME" | cut -d "=" -f 2)
 
 AWS_ACCESS_KEY := $(shell cat ../../aws_credentials | grep aws_access_key_id | cut -d " " -f 3)
 AWS_SECRET_KEY := $(shell cat ../../aws_credentials | grep aws_secret_access_key | cut -d " " -f 3)

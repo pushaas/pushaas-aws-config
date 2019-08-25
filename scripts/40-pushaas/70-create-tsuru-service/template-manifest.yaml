@@ -1,6 +1,6 @@
 id: pushaas
-username: tsuru
+username: VAR_USERNAME
 password: VAR_PASSWORD
 team: pushaas-team
 endpoint:
-  production: pushaas.tsuru
+  production: VAR_PUBLIC_IP:9000/api/v1
