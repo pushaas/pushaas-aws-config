@@ -1,4 +1,4 @@
-.PHONY: info
+	.PHONY: info
 info:
 	@echo "Create Tsuru roles for users to create apps and services"
 
@@ -19,6 +19,7 @@ plan-undo: info
 do:
 	tsuru role-add team-member team
 	tsuru role-permission-add team-member app.build app.create app.delete app.deploy app.read app.run app.update service-instance
+	@# tsuru role-assign <role name> <user> <team>
 
 .PHONY: undo
 undo:
