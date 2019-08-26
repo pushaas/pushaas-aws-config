@@ -88,8 +88,6 @@ resource "aws_ecs_service" "pushaas-redis" {
   network_configuration {
     security_groups  = ["${var.sg_pushaas_id}"]
     subnets          = ["${var.subnet_id}"]
-    # TODO remove public ip
-    assign_public_ip = true
   }
 
   service_registries {
