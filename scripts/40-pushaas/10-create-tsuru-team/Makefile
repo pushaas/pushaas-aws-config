@@ -18,9 +18,9 @@ plan-do: info
 plan-undo: info
 
 .PHONY: do
-do: config
+do:
 	tsuru team-create pushaas-team
 
 .PHONY: undo
-undo: config
+undo:
 	tsuru team-remove pushaas-team -y

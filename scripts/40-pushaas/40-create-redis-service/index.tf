@@ -127,6 +127,13 @@ resource "aws_security_group" "pushaas-redis-sg" {
     to_port = -1
   }
 
+  ingress {
+    cidr_blocks = ["10.0.0.0/16"]
+    from_port   = 0
+    protocol    = "tcp"
+    to_port     = 65535
+  }
+
   egress {
     cidr_blocks = ["0.0.0.0/0"]
     from_port   = 0
