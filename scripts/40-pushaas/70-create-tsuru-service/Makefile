@@ -12,8 +12,6 @@ setup:
 .PHONY: config
 config:
 	@cp template-manifest.yaml manifest.yaml
-	@# thanks https://stackoverflow.com/a/12170504/1717979
-	@read -p "Enter pushaas-app service public IP: " PUBLIC_IP && sed -i.bak "s/VAR_PUBLIC_IP/$$PUBLIC_IP/" manifest.yaml
 	@sed -i.bak "s/VAR_USERNAME/$(USERNAME)/" manifest.yaml
 	@sed -i.bak "s/VAR_PASSWORD/$(PASSWORD)/" manifest.yaml
 	@rm manifest.yaml.bak
