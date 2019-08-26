@@ -9,7 +9,6 @@ variable "aws_credentials_file" {}
 
 # specific
 variable "vpc_id" {}
-variable "subnet_id" {}
 
 ########################################
 # provider
@@ -26,10 +25,6 @@ provider "aws" {
 ########################################
 data "aws_vpc" "tsuru-vpc" {
   id = "${var.vpc_id}"
-}
-
-data "aws_subnet" "tsuru-subnet" {
-  id = "${var.subnet_id}"
 }
 
 ########################################

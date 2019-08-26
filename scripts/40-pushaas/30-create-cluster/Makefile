@@ -1,5 +1,4 @@
 VPC := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.outputs.vpc.value')
-SUBNET := $(shell cat "../../10-vpc/10-create-vpc/terraform.tfstate" | jq -r '.outputs.subnet.value')
 
 .PHONY: info
 info:
@@ -23,7 +22,6 @@ do:
 	terraform apply \
 		-auto-approve \
 		-var-file="../../variables/aws.tfvars" \
-		-var "subnet_id=$(SUBNET)" \
 		-var "vpc_id=$(VPC)"
 
 .PHONY: undo
@@ -31,5 +29,4 @@ undo:
 	terraform destroy \
 		-auto-approve \
 		-var-file="../../variables/aws.tfvars" \
-		-var "subnet_id=$(SUBNET)" \
 		-var "vpc_id=$(VPC)"

@@ -15,9 +15,9 @@ variable "pushaas_redis_fargate_cpu" {}
 variable "pushaas_redis_fargate_memory" {}
 
 # specific
+variable "vpc_id" {}
 variable "cluster_id" {}
 variable "namespace_id" {}
-variable "sg_pushaas_id" {}
 variable "subnet_id" {}
 
 ########################################
@@ -28,6 +28,13 @@ provider "aws" {
   profile                 = "${var.aws_profile}"
   region                  = "${var.aws_region}"
   shared_credentials_file = "${var.aws_credentials_file}"
+}
+
+########################################
+# network
+########################################
+data "aws_vpc" "tsuru-vpc" {
+  id = "${var.vpc_id}"
 }
 
 ########################################
@@ -86,12 +93,49 @@ resource "aws_ecs_service" "pushaas-redis" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    security_groups  = ["${var.sg_pushaas_id}"]
+    security_groups  = ["${aws_security_group.pushaas-redis-sg.id}"]
     subnets          = ["${var.subnet_id}"]
+    # TODO remove public ip
+    assign_public_ip = true
   }
 
   service_registries {
     registry_arn = "${aws_service_discovery_service.pushaas-redis-service.arn}"
+  }
+}
+
+########################################
+# security
+########################################
+resource "aws_security_group" "pushaas-redis-sg" {
+  name        = "pushaas-redis-security-group"
+  description = "controls access to the pushaas redis"
+  vpc_id      = "${data.aws_vpc.tsuru-vpc.id}"
+
+  ingress {
+    from_port = 0
+    protocol  = "tcp"
+    self      = true
+    to_port   = 65535
+  }
+
+  // thanks https://blog.jwr.io/terraform/icmp/ping/security/groups/2018/02/02/terraform-icmp-rules.html
+  ingress {
+    cidr_blocks = ["0.0.0.0/0"]
+    from_port = -1
+    protocol = "icmp"
+    to_port = -1
+  }
+
+  egress {
+    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 0
+    protocol    = "-1"
+    to_port     = 0
+  }
+
+  tags = {
+    Name = "pushaas"
   }
 }
 
